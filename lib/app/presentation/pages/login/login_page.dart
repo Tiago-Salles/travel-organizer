@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:travel_organizer/app/core/navigation/app_navigator.dart';
 import 'package:travel_organizer/app/core/services/device_information_service.dart';
 import 'package:travel_organizer/app/presentation/presentation_resources/images/app_images.dart';
 
@@ -14,18 +15,10 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+ValueNotifier<ActionAnimation> animatedButtonListenable =
+    ValueNotifier<ActionAnimation>(ActionAnimation.stoped);
+
 class _LoginPageState extends State<LoginPage> {
-  ValueNotifier<Widget> animatedButton =
-      ValueNotifier<Widget>(const AnimatedButtonLoginPage(
-    actionAnimation: ActionAnimation.stoped,
-  ));
-
-  void changeButton() {
-    animatedButton = ValueNotifier<Widget>(const AnimatedButtonLoginPage(
-      actionAnimation: ActionAnimation.animate,
-    ));
-  }
-
   @override
   Widget build(BuildContext context) {
     double screenPerimeter = DeviceInformationService.screenPerimeter(context);
@@ -57,12 +50,7 @@ class _LoginPageState extends State<LoginPage> {
             SizedBox(height: screenPerimeter * 0.01),
             const AppTextFormField(hintText: "senha"),
             SizedBox(height: screenPerimeter * 0.04),
-            GestureDetector(
-              onTap: () {
-                changeButton();
-              },
-              child: animatedButton.value,
-            ),
+            const AnimatedButtonLoginPage(),
           ],
         ),
       ),
@@ -108,22 +96,66 @@ class AppTextFormField extends StatelessWidget {
 }
 
 class AnimatedButtonLoginPage extends StatelessWidget {
-  final ActionAnimation actionAnimation;
-  const AnimatedButtonLoginPage({Key? key, required this.actionAnimation})
-      : super(key: key);
+  const AnimatedButtonLoginPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     double screenPerimeter = DeviceInformationService.screenPerimeter(context);
-    if (actionAnimation == ActionAnimation.animate) {
-      return SizedBox(
-        height: screenPerimeter * 0.03,
-        width: MediaQuery.of(context).size.width,
-        child: Stack(
-          children: [
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 -
-                  (screenPerimeter * 0.04),
+
+    return ValueListenableBuilder<ActionAnimation>(
+      valueListenable: animatedButtonListenable,
+      builder: (context, actionAnimation, _) {
+        if (actionAnimation == ActionAnimation.animate) {
+          return SizedBox(
+            height: screenPerimeter * 0.03,
+            width: MediaQuery.of(context).size.width,
+            child: TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 1500),
+              tween: Tween<double>(
+                begin: MediaQuery.of(context).size.width / 2 -
+                    (screenPerimeter * 0.02),
+                end: MediaQuery.of(context).size.width + screenPerimeter * 0.04,
+              ),
+              builder: (context, double value, child) {
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: MediaQuery.of(context).size.width / 2 -
+                          (screenPerimeter * 0.04),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(60),
+                        ),
+                        height: screenPerimeter * 0.03,
+                        width: screenPerimeter * 0.08,
+                      ),
+                    ),
+                    Positioned(
+                      left: value,
+                      child: SizedBox(
+                        height: screenPerimeter * 0.03,
+                        width: screenPerimeter * 0.04,
+                        child: AppImages.airPlaneImage,
+                      ),
+                    ),
+                  ],
+                );
+              },
+              onEnd: () {
+                AppNavigation.navigateToNamed(
+                    context, "/home", NavigationType.pushToNamed);
+              },
+            ),
+          );
+        } else {
+          return AnimatedOpacity(
+            opacity: 1,
+            duration: const Duration(seconds: 1),
+            child: GestureDetector(
+              onTap: () {
+                animatedButtonListenable.value = ActionAnimation.animate;
+              },
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -131,26 +163,20 @@ class AnimatedButtonLoginPage extends StatelessWidget {
                 ),
                 height: screenPerimeter * 0.03,
                 width: screenPerimeter * 0.08,
+                child: const Center(
+                  child: Text(
+                    "Entrar",
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
               ),
             ),
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 -
-                  (screenPerimeter * 0.02),
-              child: SizedBox(
-                height: screenPerimeter * 0.03,
-                width: screenPerimeter * 0.04,
-                child: AppImages.airPlaneImage,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        height: 30,
-        width: 30,
-        color: Colors.amber,
-      );
-    }
+          );
+        }
+      },
+    );
   }
 }
